@@ -43,6 +43,7 @@ async def root():
 
 
 org_id_query = re.compile(r"organization_id\s?(?:=|is)\s?['\"]?(\w*)")
+org_id_in_query = re.compile(r"organization_id\s+in\s*\(\s*(.+?)\s*\)")
 external_cluster_id_query = re.compile(r"external_cluster_id\s?(?:=|is)\s?['\"]?([\w-]*)")
 
 
@@ -64,9 +65,22 @@ async def subscriptions(
         clusters = []
     else:
         logger.info("searching for %s", search)
+        org_in_match = org_id_in_query.search(search)
         org_match = org_id_query.search(search)
         cluster_match = external_cluster_id_query.search(search)
-        if org_match:
+
+        if org_in_match:
+            # Handle IN clause - limitation: only uses the first org ID
+            # Template doesn't support aggregating clusters from multiple organizations
+            org_list_str = org_in_match.group(1)
+            # Extract org IDs from the comma-separated string, removing quotes and whitespace
+            org_ids = [org_id.strip().strip("'\"") for org_id in org_list_str.split(",")]
+            logger.info("found org IDs via IN clause: %s (using only first one)", org_ids)
+
+            # Use only the first org ID due to template limitations
+            org = org_ids[0] if org_ids else org
+            clusters = app.conf["organizations"].get(org, {}).get("clusters", [])
+        elif org_match:
             org = org_match.group(1)
             clusters = app.conf["organizations"].get(org, {}).get("clusters", [])
         else:
