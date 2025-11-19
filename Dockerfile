@@ -16,4 +16,4 @@ RUN rpm -e --nodeps sqlite-libs krb5-libs libxml2 readline
 
 USER 1001
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--log-config=logging.yaml"]
+CMD ["uvicorn", "ams:app", "--host", "0.0.0.0", "--port", "8000", "--log-config=logging.yaml"]
