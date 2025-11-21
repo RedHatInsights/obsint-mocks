@@ -115,6 +115,22 @@ async def change_rhobs_responses(responses: Union[Dict[str, ClusterResponse], Cl
     server.mock_responses = generate_mock_responses(jsonable_encoder(cluster_data))
 
 
+@router.patch("/rhobs_responses/{cluster_id}", status_code=204)
+async def add_or_update_cluster(cluster_id: str, response: ClusterResponse):
+    logger.info("Adding/updating cluster %s in RHOBS mock responses", cluster_id)
+    # Generate mock response for this single cluster
+    mock_response = generate_mock_responses({cluster_id: jsonable_encoder(response)})
+    # Add or update the cluster in the server's mock responses
+    server.mock_responses[cluster_id] = mock_response[cluster_id]
+
+
+@router.delete("/rhobs_responses/{cluster_id}", status_code=204)
+async def remove_cluster(cluster_id: str):
+    logger.info("Removing cluster %s from RHOBS mock responses", cluster_id)
+    if cluster_id in server.mock_responses:
+        del server.mock_responses[cluster_id]
+
+
 # Include the same endpoints at the "root"
 # and with a prefix. This is useful for exposing
 # internal in the cluster and through and OpenShift route
