@@ -2,11 +2,11 @@ default_metric_value = [1674659551.037, "1"]
 empty_response = {"status": "success", "data": {"resultType": "vector", "result": []}}
 
 
-def generate_mock_responses(config):
+def generate_mock_responses(cluster_responses):
     """Populates the mock_responses dictionary with generated data."""
     mock_responses = {}
 
-    for cluster_id, alerts_and_focs in config["mock_responses"].items():
+    for cluster_id, alerts_and_focs in cluster_responses.items():
         mock_responses[cluster_id] = {
             "status": "success",
             "data": {"resultType": "vector", "result": []},

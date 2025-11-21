@@ -113,11 +113,9 @@ configuration. Data are in the following format:
 
 ```
 {
-    "mock_responses": {
-        "c1e32880-417a-4226-be81-4d891cdf965e": {
-            "focs": 4,
-            "alerts" 5
-        }
+    "c1e32880-417a-4226-be81-4d891cdf965e": {
+        "focs": 4,
+        "alerts": 5
     }
 }
 ```
