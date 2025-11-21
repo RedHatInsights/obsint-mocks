@@ -6,21 +6,26 @@ The server matches [this](https://github.com/observatorium/api/tree/main/client)
 
 ## Configuration
 
-RHOBS responses can be configured via
-`[PUT] /rhobs_responses` endpoint.
-The endpoint receives JSON data that override current
-configuration. Data are in the following format:
+You can configure the number of alerts and focs that the RHOBS mock will return
+by sending a PUT request to the `/rhobs_responses` endpoint:
 
-```
-{
-    "mock_responses": {
-        "c1e32880-417a-4226-be81-4d891cdf965e": {
-            "focs": 4,
-            "alerts" 5
-        }
+```bash
+curl -X PUT http://localhost:8000/rhobs_responses \
+  -H "Content-Type: application/json" \
+  -d '{
+    "3a87e224-c878-4f54-91cf-3f1900609207": {
+      "alerts": 2,
+      "focs": 3
+    },
+    "a994b868-4878-477a-8f8d-dbddb3130ed3": {
+      "alerts": 1,
+      "focs": 0
     }
-}
+  }'
 ```
+
+This will configure the mock server to return the specified number of alerts and
+cluster operator conditions (focs) for each cluster UUID.
 
 ## Usage
 Running the mock server is pretty straight forward. Just launch:

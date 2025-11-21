@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from typing import Dict
+from typing import Union
 
 from fastapi import APIRouter
 from fastapi import FastAPI
@@ -91,13 +92,27 @@ class ClusterResponse(BaseModel):
 
 
 class ClusterResponses(BaseModel):
+    """Deprecated format with mock_responses wrapper."""
+
     mock_responses: Dict[str, ClusterResponse]
 
 
 @router.put("/rhobs_responses", status_code=204)
-async def change_rhobs_responses(responses: ClusterResponses):
+async def change_rhobs_responses(responses: Union[Dict[str, ClusterResponse], ClusterResponses]):
     logger.info("Changing mocked responses for RHOBS endpoint")
-    server.mock_responses = generate_mock_responses(jsonable_encoder(responses))
+
+    # Handle deprecated format with "mock_responses" wrapper
+    if isinstance(responses, ClusterResponses):
+        logger.warning(
+            "Using deprecated format with 'mock_responses' wrapper. "
+            "Please use the unwrapped format."
+        )
+        cluster_data = responses.mock_responses
+    else:
+        # New preferred format: direct dict
+        cluster_data = responses
+
+    server.mock_responses = generate_mock_responses(jsonable_encoder(cluster_data))
 
 
 # Include the same endpoints at the "root"
