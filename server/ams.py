@@ -180,7 +180,7 @@ class ClusterList(BaseModel):
 
 
 class AMSMockConfiguration(BaseModel):
-    organizations: dict[int, ClusterList]
+    organizations: dict[str, ClusterList]
 
 
 @router.put("/ams_responses", status_code=204)
