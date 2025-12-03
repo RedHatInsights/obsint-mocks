@@ -190,6 +190,46 @@ async def change_ams_responses(configuration: AMSMockConfiguration):
     app.conf = jsonable_encoder(configuration, exclude_unset=True)
 
 
+@router.patch("/ams_responses/{org_id}/{cluster_id}", status_code=204)
+async def add_or_update_cluster(org_id: str, cluster_id: str, cluster: Cluster):
+    """Add or update a cluster within an organization"""
+    logger.info("Adding/updating cluster %s in organization %s", cluster_id, org_id)
+
+    # Ensure the cluster UUID matches the cluster_id parameter
+    cluster.uuid = cluster_id
+
+    # Initialize the organization if it doesn't exist
+    if "organizations" not in app.conf:
+        app.conf["organizations"] = {}
+
+    if org_id not in app.conf["organizations"]:
+        app.conf["organizations"][org_id] = {"clusters": []}
+
+    # Find and update existing cluster, or add new one
+    clusters = app.conf["organizations"][org_id]["clusters"]
+    cluster_data = jsonable_encoder(cluster, exclude_unset=True)
+
+    for i, existing_cluster in enumerate(clusters):
+        if existing_cluster["uuid"] == cluster_id:
+            clusters[i] = cluster_data
+            return
+
+    # If cluster not found, add it
+    clusters.append(cluster_data)
+
+
+@router.delete("/ams_responses/{org_id}/{cluster_id}", status_code=204)
+async def remove_cluster(org_id: str, cluster_id: str):
+    """Remove a cluster from an organization"""
+    logger.info("Removing cluster %s from organization %s", cluster_id, org_id)
+
+    if "organizations" in app.conf and org_id in app.conf["organizations"]:
+        clusters = app.conf["organizations"][org_id]["clusters"]
+        app.conf["organizations"][org_id]["clusters"] = [
+            c for c in clusters if c["uuid"] != cluster_id
+        ]
+
+
 # Include the same endpoints at the "root"
 # and with a prefix. This is useful for exposing
 # internal in the cluster and through and OpenShift route
