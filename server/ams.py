@@ -165,10 +165,19 @@ async def catch_all(path_name: str):
         raise HTTPException(status_code=404, detail="Unfound response")
 
 
-class Cluster(BaseModel):
-    uuid: str
+class ClusterProperties(BaseModel):
+    """Optional cluster properties that can be set or updated."""
+
     name: Optional[str] = None
     managed: Optional[bool] = False
+
+
+class Cluster(ClusterProperties):
+    """Complete cluster model including required UUID.
+    Inherits optional properties from ClusterProperties.
+    """
+
+    uuid: str
 
 
 class ClusterList(BaseModel):
@@ -201,20 +210,20 @@ async def change_ams_responses(configuration: AMSMockConfiguration):
 
 
 @router.patch("/ams_responses/{org_id}/{cluster_id}", status_code=204)
-async def add_or_update_cluster(org_id: str, cluster_id: str, cluster: Cluster):
+async def add_or_update_cluster(org_id: str, cluster_id: str, cluster: ClusterProperties):
     """Add or update a cluster within an organization"""
     logger.info("Adding/updating cluster %s in organization %s", cluster_id, org_id)
-
-    # Ensure the cluster UUID matches the cluster_id parameter
-    cluster.uuid = cluster_id
 
     # Initialize the organization if it doesn't exist
     if org_id not in app.conf:
         app.conf[org_id] = {"clusters": []}
 
+    # Build cluster data with UUID from the URL path
+    cluster_data = jsonable_encoder(cluster, exclude_unset=True)
+    cluster_data["uuid"] = cluster_id
+
     # Find and update existing cluster, or add new one
     clusters = app.conf[org_id]["clusters"]
-    cluster_data = jsonable_encoder(cluster, exclude_unset=True)
 
     for i, existing_cluster in enumerate(clusters):
         if existing_cluster["uuid"] == cluster_id:
