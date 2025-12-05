@@ -128,8 +128,10 @@ You can add or update a single cluster using:
 ```bash
 curl -X PATCH http://localhost:8000/ams_responses/123456/c1e32880-417a-4226-be81-4d891cdf965e \
   -H "Content-Type: application/json" \
-  -d '{"uuid": "c1e32880-417a-4226-be81-4d891cdf965e", "name": "Updated Cluster", "managed": true}'
+  -d '{"name": "Updated Cluster", "managed": true}'
 ```
+
+Note: The cluster UUID is specified in the URL path, so it doesn't need to be included in the request body.
 
 You can remove a single cluster using:
 
