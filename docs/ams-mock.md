@@ -52,12 +52,22 @@ you can deploy the server and run queries directly using
 curl http://localhost:8000/api/accounts_mgmt/v1/organizations
 ```
 
-Currently, 4 endpoints have been implemented:
+Currently, the following endpoints have been implemented:
+
+**AMS API endpoints:**
 - `[GET] /api/accounts_mgmt/v1/subscriptions`
 - `[GET] /api/accounts_mgmt/v1/organizations`
+
+**Service Log API endpoints:**
 - `[GET] /api/service_logs/v1/clusters/cluster_logs`
 - `[POST] /api/service_logs/v1/cluster_logs/`
-See `server/main.py` for more details.
+
+**Configuration endpoints:**
+- `[PUT] /ams_responses` - Configure all organizations and clusters
+- `[PATCH] /ams_responses/{org_id}/{cluster_id}` - Add or update a single cluster
+- `[DELETE] /ams_responses/{org_id}/{cluster_id}` - Remove a single cluster
+
+See `server/ams.py` for more details.
 
 If you want to add new endpoints you can explicitly implement them,
 or just add the JSON you want to return on the appropriate path
@@ -71,35 +81,62 @@ check api.openshift.com or the mock server in
 
 ### AMS
 
-Some responses use a config file to make
-some inferences about the data
+Some responses use a configuration to make
+inferences about the data
 (e.g. which clusters are linked to an org).
-That file is in `server/conf.yaml`,
-as it should be aligned with the data we expect in the tests.
 
-Configuration can be changed via
-`[PUT] /ams_responses` endpoint.
-The endpoint receives JSON data that override current
-configuration. Data are in the following format:
+#### Setting all organizations and clusters
 
-```
+Configuration can be changed via `[PUT] /ams_responses` endpoint.
+The endpoint receives JSON data that overrides the current configuration.
+
+**Format:**
+
+```json
 {
     "organizations": {
         "123456": {
             "clusters": [
                 {
-                    "uuid": "c1e32880-417a-4226-be81-4d891cdf965e"
+                    "uuid": "c1e32880-417a-4226-be81-4d891cdf965e",
                     "name": "Example cluster 1",
-                    "managed": "true"
+                    "managed": true
                 },
                 {
                     "uuid": "c2b778e0-5ac8-4cf4-8269-c6eaf0519fe4",
                     "name": "Example cluster 2"
                 }
             ]
+        },
+        "789012": {
+            "clusters": [
+                {
+                    "uuid": "d3c889f1-628b-5337-9e8a-5e9bf1630g7f",
+                    "name": "Example cluster 3",
+                    "managed": false
+                }
+            ]
         }
     }
 }
+```
+
+#### Managing individual clusters
+
+You can add or update a single cluster using:
+
+```bash
+curl -X PATCH http://localhost:8000/ams_responses/123456/c1e32880-417a-4226-be81-4d891cdf965e \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Updated Cluster", "managed": true}'
+```
+
+Note: The cluster UUID is specified in the URL path, so it doesn't need to be included in the request body.
+
+You can remove a single cluster using:
+
+```bash
+curl -X DELETE http://localhost:8000/ams_responses/123456/c1e32880-417a-4226-be81-4d891cdf965e
 ```
 
 

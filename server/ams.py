@@ -34,7 +34,7 @@ templates.env.globals["random_string"] = lambda: "".join(
     random.choice(string.ascii_letters + string.digits) for i in range(16)
 )
 
-app.conf = {"organizations": {}}
+app.conf = {}
 
 
 @router.get("/")
@@ -79,17 +79,13 @@ async def subscriptions(
 
             # Use only the first org ID due to template limitations
             org = org_ids[0] if org_ids else org
-            clusters = app.conf["organizations"].get(org, {}).get("clusters", [])
+            clusters = app.conf.get(org, {}).get("clusters", [])
         elif org_match:
             org = org_match.group(1)
-            clusters = app.conf["organizations"].get(org, {}).get("clusters", [])
+            clusters = app.conf.get(org, {}).get("clusters", [])
         else:
             logger.info("no org provided, getting all clusters")
-            clusters = [
-                c
-                for org in app.conf["organizations"]
-                for c in app.conf["organizations"][org]["clusters"]
-            ]
+            clusters = [c for org in app.conf for c in app.conf[org]["clusters"]]
         # TODO: what if cluster_match with 1 org and without org
         if cluster_match:
             logger.info("cluster match %s", cluster_match.group(1))
@@ -116,7 +112,7 @@ async def organizations(request: Request, search: str = Query(default="")):
     if match:
         orgs = [match.group(1)]
     else:
-        orgs = list(app.conf["organizations"].keys())
+        orgs = list(app.conf.keys())
     return templates.TemplateResponse(
         "accounts_mgmt/v1/organizations.tpl",
         {"request": request, "organizations": orgs},
@@ -169,10 +165,19 @@ async def catch_all(path_name: str):
         raise HTTPException(status_code=404, detail="Unfound response")
 
 
-class Cluster(BaseModel):
-    uuid: str
+class ClusterProperties(BaseModel):
+    """Optional cluster properties that can be set or updated."""
+
     name: Optional[str] = None
     managed: Optional[bool] = False
+
+
+class Cluster(ClusterProperties):
+    """Complete cluster model including required UUID.
+    Inherits optional properties from ClusterProperties.
+    """
+
+    uuid: str
 
 
 class ClusterList(BaseModel):
@@ -180,14 +185,63 @@ class ClusterList(BaseModel):
 
 
 class AMSMockConfiguration(BaseModel):
-    organizations: dict[int, ClusterList]
+    """Configuration format for AMS mock responses."""
+
+    organizations: dict[str, ClusterList]
 
 
 @router.put("/ams_responses", status_code=204)
 async def change_ams_responses(configuration: AMSMockConfiguration):
-    """Configure the responses from AMS mock"""
+    """Configure the organizations and clusters for AMS mock responses.
+
+    Expected format with "organizations" wrapper:
+    {
+        "organizations": {
+            "12345": {
+                "clusters": [
+                    {"uuid": "abc-123", "name": "cluster1", "managed": true}
+                ]
+            }
+        }
+    }
+    """
     logger.info("Changing mocked responses for AMS")
-    app.conf = jsonable_encoder(configuration, exclude_unset=True)
+    app.conf = jsonable_encoder(configuration.organizations, exclude_unset=True)
+
+
+@router.patch("/ams_responses/{org_id}/{cluster_id}", status_code=204)
+async def add_or_update_cluster(org_id: str, cluster_id: str, cluster: ClusterProperties):
+    """Add or update a cluster within an organization"""
+    logger.info("Adding/updating cluster %s in organization %s", cluster_id, org_id)
+
+    # Initialize the organization if it doesn't exist
+    if org_id not in app.conf:
+        app.conf[org_id] = {"clusters": []}
+
+    # Build cluster data with UUID from the URL path
+    cluster_data = jsonable_encoder(cluster, exclude_unset=True)
+    cluster_data["uuid"] = cluster_id
+
+    # Find and update existing cluster, or add new one
+    clusters = app.conf[org_id]["clusters"]
+
+    for i, existing_cluster in enumerate(clusters):
+        if existing_cluster["uuid"] == cluster_id:
+            clusters[i] = cluster_data
+            return
+
+    # If cluster not found, add it
+    clusters.append(cluster_data)
+
+
+@router.delete("/ams_responses/{org_id}/{cluster_id}", status_code=204)
+async def remove_cluster(org_id: str, cluster_id: str):
+    """Remove a cluster from an organization"""
+    logger.info("Removing cluster %s from organization %s", cluster_id, org_id)
+
+    if org_id in app.conf:
+        clusters = app.conf[org_id]["clusters"]
+        app.conf[org_id]["clusters"] = [c for c in clusters if c["uuid"] != cluster_id]
 
 
 # Include the same endpoints at the "root"
