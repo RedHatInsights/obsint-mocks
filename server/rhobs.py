@@ -1,18 +1,12 @@
 import logging
 import os
 import re
-from typing import Dict
-from typing import Union
 
-from fastapi import APIRouter
-from fastapi import FastAPI
-from fastapi import Query
+from fastapi import APIRouter, FastAPI, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from generate_rhobs_data import empty_response, generate_mock_responses
 from pydantic import BaseModel
-
-from generate_rhobs_data import empty_response
-from generate_rhobs_data import generate_mock_responses
 
 logger = logging.getLogger(__name__)
 app = FastAPI()
@@ -38,7 +32,9 @@ class Server:
         logger.info("got a request for %s clusters", cluster_ids)
         for cluster_id in cluster_ids:
             if cluster_id in self.mock_responses:
-                response["data"]["result"].extend(self.mock_responses[cluster_id]["data"]["result"])
+                response["data"]["result"].extend(
+                    self.mock_responses[cluster_id]["data"]["result"]
+                )
         return JSONResponse(content=response, status_code=200)
 
     def get_instant_query(self, tenant, query: str):
@@ -94,11 +90,13 @@ class ClusterResponse(BaseModel):
 class ClusterResponses(BaseModel):
     """Deprecated format with mock_responses wrapper."""
 
-    mock_responses: Dict[str, ClusterResponse]
+    mock_responses: dict[str, ClusterResponse]
 
 
 @router.put("/rhobs_responses", status_code=204)
-async def change_rhobs_responses(responses: Union[Dict[str, ClusterResponse], ClusterResponses]):
+async def change_rhobs_responses(
+    responses: dict[str, ClusterResponse] | ClusterResponses,
+):
     logger.info("Changing mocked responses for RHOBS endpoint")
 
     # Handle deprecated format with "mock_responses" wrapper

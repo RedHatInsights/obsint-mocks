@@ -6,16 +6,10 @@ import re
 import string
 from os import path
 from pathlib import Path
-from typing import Optional
 
-from fastapi import APIRouter
-from fastapi import FastAPI
-from fastapi import HTTPException
-from fastapi import Query
-from fastapi import Request
+from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import FileResponse
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
@@ -29,7 +23,9 @@ DATA_FOLDER = FOLDER / "../data"
 if os.getenv("MOCK_DATA"):
     DATA_FOLDER = Path(os.getenv("MOCK_DATA"))  # type: ignore[arg-type]
 
-templates = Jinja2Templates(directory=DATA_FOLDER / "api", trim_blocks=True, lstrip_blocks=True)
+templates = Jinja2Templates(
+    directory=DATA_FOLDER / "api", trim_blocks=True, lstrip_blocks=True
+)
 templates.env.globals["random_string"] = lambda: "".join(
     random.choice(string.ascii_letters + string.digits) for i in range(16)
 )
@@ -44,12 +40,14 @@ async def root():
 
 org_id_query = re.compile(r"organization_id\s?(?:=|is)\s?['\"]?(\w*)")
 org_id_in_query = re.compile(r"organization_id\s+in\s*\(\s*(.+?)\s*\)")
-external_cluster_id_query = re.compile(r"external_cluster_id\s?(?:=|is)\s?['\"]?([\w-]*)")
+external_cluster_id_query = re.compile(
+    r"external_cluster_id\s?(?:=|is)\s?['\"]?([\w-]*)"
+)
 
 
 @router.get("/api/accounts_mgmt/v1/subscriptions", response_class=JSONResponse)
 async def subscriptions(
-    request: Request, page: Optional[int] = None, search: str = Query(default="")
+    request: Request, page: int | None = None, search: str = Query(default="")
 ):
     """
     Cases:
@@ -74,8 +72,12 @@ async def subscriptions(
             # Template doesn't support aggregating clusters from multiple organizations
             org_list_str = org_in_match.group(1)
             # Extract org IDs from the comma-separated string, removing quotes and whitespace
-            org_ids = [org_id.strip().strip("'\"") for org_id in org_list_str.split(",")]
-            logger.info("found org IDs via IN clause: %s (using only first one)", org_ids)
+            org_ids = [
+                org_id.strip().strip("'\"") for org_id in org_list_str.split(",")
+            ]
+            logger.info(
+                "found org IDs via IN clause: %s (using only first one)", org_ids
+            )
 
             # Use only the first org ID due to template limitations
             org = org_ids[0] if org_ids else org
@@ -109,10 +111,7 @@ async def organizations(request: Request, search: str = Query(default="")):
     """
     logger.info("getting organizations")
     match = org_external_id_query.search(search)
-    if match:
-        orgs = [match.group(1)]
-    else:
-        orgs = list(app.conf.keys())
+    orgs = [match.group(1)] if match else list(app.conf)
     return templates.TemplateResponse(
         "accounts_mgmt/v1/organizations.tpl",
         {"request": request, "organizations": orgs},
@@ -149,8 +148,10 @@ async def service_log_create_event(request: Request):
         logger.info("event successfully decoded")
         app.state.service_log[new_event["cluster_uuid"]] = new_event
         return {"Event received successfully"}
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=404, detail="Message is not valid JSON")
+    except json.JSONDecodeError as err:
+        raise HTTPException(
+            status_code=404, detail="Message is not valid JSON"
+        ) from err
 
 
 @router.api_route("/{path_name:path}", methods=["GET"], response_class=FileResponse)
@@ -168,8 +169,8 @@ async def catch_all(path_name: str):
 class ClusterProperties(BaseModel):
     """Optional cluster properties that can be set or updated."""
 
-    name: Optional[str] = None
-    managed: Optional[bool] = False
+    name: str | None = None
+    managed: bool | None = False
 
 
 class Cluster(ClusterProperties):
@@ -210,7 +211,9 @@ async def change_ams_responses(configuration: AMSMockConfiguration):
 
 
 @router.patch("/ams_responses/{org_id}/{cluster_id}", status_code=204)
-async def add_or_update_cluster(org_id: str, cluster_id: str, cluster: ClusterProperties):
+async def add_or_update_cluster(
+    org_id: str, cluster_id: str, cluster: ClusterProperties
+):
     """Add or update a cluster within an organization"""
     logger.info("Adding/updating cluster %s in organization %s", cluster_id, org_id)
 
