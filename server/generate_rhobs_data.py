@@ -19,9 +19,13 @@ def generate_mock_responses(cluster_responses):
         )
 
         for i in range(alerts_and_focs["alerts"]):
-            mock_responses[cluster_id] = add_alert(mock_responses[cluster_id], cluster_id, i)
+            mock_responses[cluster_id] = add_alert(
+                mock_responses[cluster_id], cluster_id, i
+            )
         for i in range(alerts_and_focs["focs"]):
-            mock_responses[cluster_id] = add_foc(mock_responses[cluster_id], cluster_id, i)
+            mock_responses[cluster_id] = add_foc(
+                mock_responses[cluster_id], cluster_id, i
+            )
     return mock_responses
 
 
