@@ -23,9 +23,9 @@ DATA_FOLDER = FOLDER / "../data"
 if os.getenv("MOCK_DATA"):
     DATA_FOLDER = Path(os.getenv("MOCK_DATA"))  # type: ignore[arg-type]
 
-templates = Jinja2Templates(
-    directory=DATA_FOLDER / "api", trim_blocks=True, lstrip_blocks=True
-)
+templates = Jinja2Templates(directory=DATA_FOLDER / "api")
+templates.env.trim_blocks = True
+templates.env.lstrip_blocks = True
 templates.env.globals["random_string"] = lambda: "".join(
     random.choice(string.ascii_letters + string.digits) for i in range(16)
 )
