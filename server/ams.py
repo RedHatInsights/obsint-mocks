@@ -93,8 +93,9 @@ async def subscriptions(
             logger.info("cluster match %s", cluster_match.group(1))
             clusters = [c for c in clusters if c["uuid"] == cluster_match.group(1)]
     return templates.TemplateResponse(
-        "accounts_mgmt/v1/subscriptions.tpl",
-        {"request": request, "clusters": clusters, "organization": org},
+        request=request,
+        name="accounts_mgmt/v1/subscriptions.tpl",
+        context={"clusters": clusters, "organization": org},
         media_type="application/json",
     )
 
@@ -113,8 +114,9 @@ async def organizations(request: Request, search: str = Query(default="")):
     match = org_external_id_query.search(search)
     orgs = [match.group(1)] if match else list(app.conf)
     return templates.TemplateResponse(
-        "accounts_mgmt/v1/organizations.tpl",
-        {"request": request, "organizations": orgs},
+        request=request,
+        name="accounts_mgmt/v1/organizations.tpl",
+        context={"organizations": orgs},
         media_type="application/json",
     )
 
