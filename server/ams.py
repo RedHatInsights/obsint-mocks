@@ -133,11 +133,12 @@ async def service_log_events(request: Request):
     else:
         raise HTTPException(status_code=400, detail="Cluster ID missing")
 
-    logs = []
-    cluster_event = app.state.service_log.get(cluster_id, None)
-    if cluster_event:
-        logs = [cluster_event]
-    response = {"kind": "ClusterLogList", "items": logs, "size": len(logs)}
+    cluster_events = app.state.service_log.get(cluster_id, [])
+    response = {
+        "kind": "ClusterLogList",
+        "items": cluster_events,
+        "size": len(cluster_events),
+    }
     return response
 
 
@@ -148,7 +149,9 @@ async def service_log_create_event(request: Request):
     try:
         new_event = json.loads(body.decode("utf8"))
         logger.info("event successfully decoded")
-        app.state.service_log[new_event["cluster_uuid"]] = new_event
+        app.state.service_log.setdefault(new_event["cluster_uuid"], []).append(
+            new_event
+        )
         return {"Event received successfully"}
     except json.JSONDecodeError as err:
         raise HTTPException(
