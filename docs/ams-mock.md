@@ -62,6 +62,11 @@ Currently, the following endpoints have been implemented:
 - `[GET] /api/service_logs/v1/clusters/cluster_logs`
 - `[POST] /api/service_logs/v1/cluster_logs/`
 
+Note: the Service Log mock does not filter the returned data at all.
+Query parameters such as `search`, `fields`, `orderBy`, or `size` are
+accepted but ignored: the GET endpoint always returns every stored
+event for the cluster.
+
 **Configuration endpoints:**
 - `[PUT] /ams_responses` - Configure all organizations and clusters
 - `[PATCH] /ams_responses/{org_id}/{cluster_id}` - Add or update a single cluster
